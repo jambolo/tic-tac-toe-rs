@@ -2,7 +2,8 @@
 // by the backend and forwards user intent through `api`. The Rust core is the
 // single source of truth for legality and outcomes.
 
-import { api, type GameView, type Mark } from "./api";
+import { api, type GameView } from "./api";
+import { statusText } from "./status";
 
 const boardEl = document.getElementById("board") as HTMLDivElement;
 const statusEl = document.getElementById("status") as HTMLParagraphElement;
@@ -33,11 +34,10 @@ function selectedRadio(name: string): string {
 }
 
 async function startGame(): Promise<void> {
-  const mark = (selectedRadio("mark") || "X") as Mark;
   const humanStarts = selectedRadio("first") !== "computer";
   busy = false;
   thinking = false;
-  view = await api.newGame(mark, humanStarts);
+  view = await api.newGame(humanStarts);
   render();
   await maybeAiTurn();
 }
@@ -73,24 +73,6 @@ async function maybeAiTurn(): Promise<void> {
   render();
 }
 
-function humanLabel(): Mark {
-  return view ? view.humanMark : "X";
-}
-
-function statusText(): string {
-  if (!view) return "";
-  const human = humanLabel();
-  switch (view.status.kind) {
-    case "win":
-      return view.status.winner === human ? "You win! 🎉" : "Computer wins.";
-    case "draw":
-      return "It's a draw.";
-    case "inProgress":
-      if (view.awaitingAi) return thinking ? "Computer is thinking…" : "Computer's turn…";
-      return `Your turn (${human}).`;
-  }
-}
-
 function render(): void {
   if (!view) return;
   const over = view.status.kind !== "inProgress";
@@ -109,7 +91,7 @@ function render(): void {
   });
 
   boardEl.classList.toggle("thinking", view.awaitingAi && !over);
-  statusEl.textContent = statusText();
+  statusEl.textContent = statusText(view, thinking);
 }
 
 newGameBtn.addEventListener("click", () => {

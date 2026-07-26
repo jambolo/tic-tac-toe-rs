@@ -1,0 +1,28 @@
+{
+  // Point rust-analyzer at the workspace root so it picks up both crates
+  // (src-core, src-tauri) plus the vendored game-player path dependency.
+  "rust-analyzer.linkedProjects": ["./Cargo.toml"],
+  "rust-analyzer.cargo.features": "all",
+  "rust-analyzer.check.command": "clippy",
+
+  // Use the TypeScript version installed in node_modules (matches what the
+  // build actually uses) instead of VS Code's bundled version.
+  "typescript.tsdk": "node_modules/typescript/lib",
+
+  // Keep line endings consistent regardless of platform; see DEVELOPMENT.md's
+  // Windows/Git Bash notes on autocrlf.
+  "files.eol": "\n",
+
+  // On Windows, default the integrated terminal to Git Bash so every command
+  // in DEVELOPMENT.md can be pasted verbatim.
+  "terminal.integrated.defaultProfile.windows": "Git Bash",
+
+  "[rust]": {
+    "editor.defaultFormatter": "rust-lang.rust-analyzer",
+    "editor.formatOnSave": true
+  },
+  "[typescript]": {
+    "editor.defaultFormatter": "esbenp.prettier-vscode",
+    "editor.formatOnSave": true
+  }
+}

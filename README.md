@@ -36,7 +36,7 @@ skeleton can be reused for other apps.
 ## Prerequisites
 
 * **Rust** (stable, edition 2024 — rustc ≥ 1.85; developed against 1.95).
-* **Node.js** (≥ 18) and npm.
+* **Node.js** (≥ 18) and **pnpm** (`npm install -g pnpm`).
 * **Tauri system dependencies** for your OS — see
   <https://tauri.app/start/prerequisites/>. On Windows this is just the WebView2
   runtime (already present on Windows 10/11).
@@ -54,8 +54,8 @@ git submodule update --init --recursive
 ## Run in development
 
 ```bash
-npm install
-npm run tauri dev
+pnpm install
+pnpm tauri dev
 ```
 
 This launches the app window with the Vite dev server and hot reload.
@@ -63,7 +63,7 @@ This launches the app window with the Vite dev server and hot reload.
 ## Build a distributable
 
 ```bash
-npm run tauri build
+pnpm tauri build
 ```
 
 Produces a native installer for the platform you build on (`.msi`/`.exe` on
@@ -71,7 +71,7 @@ Windows, `.dmg`/`.app` on macOS, `.deb`/`.AppImage` on Linux).
 
 > Note: the bundled icons include PNG and a Windows `.ico`. For a macOS release
 > build you'll also want an `.icns` — regenerate the full set from a source image
-> with `npm run tauri icon src-tauri/icons/icon.png`.
+> with `pnpm tauri icon src-tauri/icons/icon.png`.
 
 ## Test the engine
 

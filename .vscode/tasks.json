@@ -1,0 +1,76 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "tauri: dev",
+      "type": "shell",
+      "command": "pnpm tauri dev",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": {
+          "regexp": "^error(?:\\[(\\S+)\\])?: (.*)$",
+          "message": 2
+        },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "Compiling|Running",
+          "endsPattern": "webview window created|VITE v"
+        }
+      },
+      "presentation": { "reveal": "always", "group": "dev" }
+    },
+    {
+      "label": "vite: dev (frontend only)",
+      "type": "shell",
+      "command": "pnpm dev",
+      "isBackground": true,
+      "problemMatcher": {
+        "pattern": { "regexp": "^error: (.*)$", "message": 1 },
+        "background": {
+          "activeOnStart": true,
+          "beginsPattern": "VITE",
+          "endsPattern": "ready in"
+        }
+      },
+      "presentation": { "reveal": "always", "group": "dev" }
+    },
+    {
+      "label": "rust: test core",
+      "type": "shell",
+      "command": "cargo test -p ttt-core",
+      "group": { "kind": "test", "isDefault": true },
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "rust: clippy",
+      "type": "shell",
+      "command": "cargo clippy --workspace --all-targets",
+      "problemMatcher": ["$rustc"]
+    },
+    {
+      "label": "rust: fmt",
+      "type": "shell",
+      "command": "cargo fmt --all",
+      "problemMatcher": []
+    },
+    {
+      "label": "ts: test",
+      "type": "shell",
+      "command": "pnpm test",
+      "group": { "kind": "test", "isDefault": false },
+      "problemMatcher": []
+    },
+    {
+      "label": "ts: typecheck",
+      "type": "shell",
+      "command": "pnpm typecheck",
+      "problemMatcher": ["$tsc"]
+    },
+    {
+      "label": "build: release bundle",
+      "type": "shell",
+      "command": "pnpm tauri build",
+      "problemMatcher": ["$rustc"]
+    }
+  ]
+}

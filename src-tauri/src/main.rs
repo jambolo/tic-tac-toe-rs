@@ -65,14 +65,6 @@ fn mark_char(m: Mark) -> char {
     }
 }
 
-fn parse_mark(c: char) -> Result<Mark, String> {
-    match c.to_ascii_uppercase() {
-        'X' => Ok(Mark::X),
-        'O' => Ok(Mark::O),
-        other => Err(format!("invalid mark: {other:?}")),
-    }
-}
-
 /// Build the wire view from the authoritative game.
 fn view(game: &Game) -> GameView {
     let cells = game.board.cells().map(|c| c.map(mark_char));
@@ -94,11 +86,11 @@ fn view(game: &Game) -> GameView {
 // Commands
 // ---------------------------------------------------------------------------
 
-/// Start a new game. `mark` is the human's mark; `human_starts` decides who opens.
+/// Start a new game. X always opens; `human_starts` decides whether the human
+/// plays X (first) or O (second).
 #[tauri::command]
-fn new_game(mark: char, human_starts: bool, state: State<'_, AppState>) -> Result<GameView, String> {
-    let human = parse_mark(mark)?;
-    let game = Game::new(human, human_starts);
+fn new_game(human_starts: bool, state: State<'_, AppState>) -> Result<GameView, String> {
+    let game = Game::new(human_starts);
     let v = view(&game);
     *state.game.lock().unwrap() = Some(game);
     Ok(v)
@@ -161,4 +153,68 @@ fn main() {
         .invoke_handler(tauri::generate_handler![new_game, play, ai_move])
         .run(tauri::generate_context!())
         .expect("error while running the Tic-Tac-Toe application");
+}
+
+// The command handlers themselves are thin wrappers over `ttt-core` (where the
+// logic and its tests live); what *is* worth pinning down here is the protocol —
+// the exact JSON shapes the front end deserializes (`src/api.ts` mirrors them).
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn view_reports_awaiting_ai_only_on_the_computers_turn() {
+        let human_first = Game::new(true);
+        assert!(!view(&human_first).awaiting_ai);
+
+        // Computer starts: it opens as X, the human plays O.
+        let computer_first = Game::new(false);
+        let v = view(&computer_first);
+        assert!(v.awaiting_ai);
+        assert_eq!(v.turn, 'X');
+        assert_eq!(v.human_mark, 'O');
+    }
+
+    #[test]
+    fn view_clears_awaiting_ai_once_the_game_is_over() {
+        let mut game = Game::new(true);
+        // X: 0, O: 3, X: 1, O: 4, X: 2 => X wins; it would be O's (the AI's) turn.
+        for cell in [0, 3, 1, 4, 2] {
+            game.play(cell).unwrap();
+        }
+        let v = view(&game);
+        assert!(!v.awaiting_ai);
+        assert!(matches!(v.status, StatusView::Win { winner: 'X' }));
+        assert_eq!(v.cells[0], Some('X'));
+        assert_eq!(v.cells[3], Some('O'));
+        assert_eq!(v.cells[8], None);
+    }
+
+    #[test]
+    fn game_view_serializes_to_the_wire_shape_the_frontend_expects() {
+        let v = view(&Game::new(false));
+        assert_eq!(
+            serde_json::to_value(&v).unwrap(),
+            json!({
+                "cells": [null, null, null, null, null, null, null, null, null],
+                "turn": "X",
+                "humanMark": "O",
+                "status": { "kind": "inProgress" },
+                "awaitingAi": true,
+            })
+        );
+    }
+
+    #[test]
+    fn status_view_serializes_win_and_draw_variants() {
+        assert_eq!(
+            serde_json::to_value(StatusView::Win { winner: 'O' }).unwrap(),
+            json!({ "kind": "win", "winner": "O" })
+        );
+        assert_eq!(
+            serde_json::to_value(StatusView::Draw).unwrap(),
+            json!({ "kind": "draw" })
+        );
+    }
 }

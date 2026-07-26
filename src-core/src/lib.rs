@@ -176,9 +176,17 @@ impl Board {
             .collect()
     }
 
-    /// Number of filled cells, as an `f32` for use in evaluation.
-    fn filled(&self) -> f32 {
-        self.cells.iter().filter(|c| c.is_some()).count() as f32
+    /// Number of lines where `mark` has two cells and the third is empty —
+    /// i.e. immediate winning threats for `mark`.
+    fn threats(&self, mark: Mark) -> usize {
+        LINES
+            .iter()
+            .filter(|line| {
+                let own = line.iter().filter(|&&i| self.cells[i] == Some(mark)).count();
+                let empty = line.iter().filter(|&&i| self.cells[i].is_none()).count();
+                own == 2 && empty == 1
+            })
+            .count()
     }
 }
 
@@ -221,22 +229,71 @@ impl State for Board {
 
 /// Static evaluator, scored from Alice's (X's) perspective.
 ///
-/// A win is worth ±`WIN`, adjusted by how many cells were filled to reach it, so
-/// the search prefers to **win as quickly as possible** and **lose as slowly as
-/// possible**. Non-terminal positions score `0`; because the search reaches full
-/// depth, those interior values are always backed up from real terminals.
+/// A completed win is worth exactly ±`WIN` — matching `alice_wins_value` /
+/// `bob_wins_value` so the search's win-recognition cutoffs fire. Non-terminal
+/// positions are scored by immediate threats per side (a threat is a line with
+/// two own marks and an empty cell): one threat is worth `WIN / 2`, two or more
+/// (a fork) `WIN - 1` — strictly below `WIN`, so only a real terminal reads as
+/// a win. X's and O's threat scores are combined by subtraction.
+///
+/// When neither side has a threat, the position is scored on square occupancy
+/// instead: the centre is worth `WIN / 5` and each corner `WIN / 10`, again
+/// combined by subtraction. The maximum positional score (centre plus all four
+/// corners, `3 * WIN / 5`) stays below a single threat's `WIN / 2` differential
+/// only in mixed positions; more importantly it stays below `WIN`, so it can
+/// never read as a win.
 pub struct Evaluator;
 
 const WIN: f32 = 100.0;
+
+/// Threat score for one side: 0, `WIN / 2` for a single threat, `WIN - 1` for a fork.
+fn threat_value(count: usize) -> f32 {
+    match count {
+        0 => 0.0,
+        1 => WIN / 2.0,
+        _ => WIN - 1.0,
+    }
+}
+
+/// The four corner cells.
+const CORNERS: [usize; 4] = [0, 2, 6, 8];
+
+/// The centre cell.
+const CENTER: usize = 4;
+
+/// Positional score for one side: `WIN / 5` for holding the centre plus
+/// `WIN / 10` per corner held. Used only when neither side has a threat.
+fn position_value(board: &Board, mark: Mark) -> f32 {
+    let cells = board.cells();
+    let mut value = 0.0;
+    if cells[CENTER] == Some(mark) {
+        value += WIN / 5.0;
+    }
+    for corner in CORNERS {
+        if cells[corner] == Some(mark) {
+            value += WIN / 10.0;
+        }
+    }
+    value
+}
 
 impl StaticEvaluator for Evaluator {
     type State = Board;
 
     fn evaluate(&self, state: &Board) -> f32 {
         match state.winner() {
-            Some(Mark::X) => self.alice_wins_value() - state.filled(),
-            Some(Mark::O) => self.bob_wins_value() + state.filled(),
-            None => 0.0, // draw or (interior) ongoing position
+            Some(Mark::X) => self.alice_wins_value(),
+            Some(Mark::O) => self.bob_wins_value(),
+            None if state.is_full() => 0.0, // draw
+            None => {
+                let x_threats = state.threats(Mark::X);
+                let o_threats = state.threats(Mark::O);
+                if x_threats == 0 && o_threats == 0 {
+                    position_value(state, Mark::X) - position_value(state, Mark::O)
+                } else {
+                    threat_value(x_threats) - threat_value(o_threats)
+                }
+            }
         }
     }
 
@@ -276,12 +333,12 @@ pub struct Game {
 }
 
 impl Game {
-    /// Start a game. The human plays `human`; `human_starts` decides who moves first.
-    pub fn new(human: Mark, human_starts: bool) -> Self {
-        let first = if human_starts { human } else { human.other() };
+    /// Start a game. X always moves first; `human_starts` decides whether the
+    /// human plays X (moving first) or O (moving second).
+    pub fn new(human_starts: bool) -> Self {
         Game {
-            board: Board::new(first),
-            human,
+            board: Board::new(Mark::X),
+            human: if human_starts { Mark::X } else { Mark::O },
         }
     }
 
@@ -429,6 +486,33 @@ mod tests {
     }
 
     #[test]
+    fn computer_going_first_beats_a_side_square_reply() {
+        // The computer (X) opens optimally. O answers with a side square — a
+        // theoretically losing reply to a perfect opening — then plays
+        // optimally for the rest of the game. X must still convert the win.
+        const SIDES: [usize; 4] = [1, 3, 5, 7];
+        let start = Board::new(Mark::X);
+        let opening = best_move(&start).expect("empty board must have a move");
+        let after_x = start.apply(&opening);
+
+        for side in SIDES {
+            if after_x.cells()[side].is_some() {
+                continue; // X's opening took this square
+            }
+            let mut b = after_x.apply(&Move { cell: side });
+            while b.status() == Status::InProgress {
+                let mv = best_move(&b).expect("non-terminal position must have a move");
+                b = b.apply(&mv);
+            }
+            assert_eq!(
+                b.status(),
+                Status::Win(Mark::X),
+                "O opened with side square {side} and should have lost"
+            );
+        }
+    }
+
+    #[test]
     fn apply_is_immutable_and_flips_turn() {
         let b0 = Board::new(Mark::X);
         let b1 = b0.apply(&Move { cell: 4 });
@@ -436,5 +520,184 @@ mod tests {
         assert_eq!(b1.cells()[4], Some(Mark::X));
         assert_eq!(b1.turn_mark(), Mark::O);
         assert_ne!(b0.fingerprint(), b1.fingerprint());
+    }
+
+    #[test]
+    fn mark_conversions_round_trip() {
+        for m in [Mark::X, Mark::O] {
+            assert_eq!(Mark::from_player(m.player()), m);
+            assert_eq!(m.other().other(), m);
+            assert_ne!(m.other(), m);
+        }
+        assert_eq!(Mark::X.player(), PlayerId::Alice);
+        assert_eq!(Mark::O.player(), PlayerId::Bob);
+    }
+
+    #[test]
+    fn full_board_without_a_winner_is_a_draw() {
+        let b = board_from("XOX OXO OXO", Mark::X);
+        assert!(b.is_full());
+        assert_eq!(b.status(), Status::Draw);
+    }
+
+    #[test]
+    fn legal_moves_are_empty_exactly_when_terminal() {
+        // The contract game-player's search relies on.
+        let won = board_from("XXX OO. ...", Mark::O);
+        assert!(won.legal_moves().is_empty());
+
+        let drawn = board_from("XOX OXO OXO", Mark::X);
+        assert!(drawn.legal_moves().is_empty());
+
+        let open = board_from("X.. .O. ...", Mark::X);
+        let moves = open.legal_moves();
+        assert_eq!(moves.len(), 7);
+        assert!(moves.iter().all(|m| open.cells()[m.cell].is_none()));
+
+        assert_eq!(Board::new(Mark::X).legal_moves().len(), BOARD_SIZE);
+    }
+
+    #[test]
+    fn fingerprint_distinguishes_turn_on_identical_cells() {
+        let x_to_move = board_from("X.. .O. ...", Mark::X);
+        let o_to_move = board_from("X.. .O. ...", Mark::O);
+        assert_ne!(x_to_move.fingerprint(), o_to_move.fingerprint());
+    }
+
+    #[test]
+    fn evaluator_scores_terminal_wins_at_exactly_win_value() {
+        // A completed win must equal alice_wins_value/bob_wins_value so the
+        // search's win-recognition cutoff (`is_winning_value`) fires.
+        let x_won = board_from("XXX OO. ...", Mark::O);
+        assert_eq!(Evaluator.evaluate(&x_won), Evaluator.alice_wins_value());
+
+        let o_won = board_from("OOO XX. ..X", Mark::X);
+        assert_eq!(Evaluator.evaluate(&o_won), Evaluator.bob_wins_value());
+    }
+
+    #[test]
+    fn evaluator_scores_single_threat_as_half_win() {
+        // X has two in the top row with cell 2 open; O has no threat.
+        let x_threat = board_from("XX. O.. ...", Mark::O);
+        assert_eq!(Evaluator.evaluate(&x_threat), 50.0);
+
+        // Mirror for O.
+        let o_threat = board_from("OO. X.. ..X", Mark::X);
+        assert_eq!(Evaluator.evaluate(&o_threat), -50.0);
+    }
+
+    #[test]
+    fn evaluator_scores_fork_as_win_minus_one() {
+        // X threatens the top row (cell 2) and the left column (cell 6): a fork.
+        // O's marks (cells 5 and 7) share no line, so O has no threat.
+        let x_fork = board_from("XX. X.O .O.", Mark::O);
+        assert_eq!(x_fork.threats(Mark::X), 2);
+        assert_eq!(Evaluator.evaluate(&x_fork), 99.0);
+
+        // Mirror for O.
+        let o_fork = board_from("OO. O.X .X.", Mark::X);
+        assert_eq!(o_fork.threats(Mark::O), 2);
+        assert_eq!(Evaluator.evaluate(&o_fork), -99.0);
+    }
+
+    #[test]
+    fn evaluator_scores_center_and_corners_when_no_threat() {
+        // Centre is worth WIN/5, a corner WIN/10, mirrored for O.
+        assert_eq!(Evaluator.evaluate(&board_from("... .X. ...", Mark::O)), 20.0);
+        assert_eq!(Evaluator.evaluate(&board_from("... .O. ...", Mark::X)), -20.0);
+        assert_eq!(Evaluator.evaluate(&board_from("X.. ... ...", Mark::O)), 10.0);
+
+        // X holds centre + a corner (30), O holds a corner (10); the shared
+        // diagonal is blocked, so no threats: 30 - 10 = 20.
+        let mixed = board_from("X.. .X. ..O", Mark::O);
+        assert_eq!(mixed.threats(Mark::X), 0);
+        assert_eq!(Evaluator.evaluate(&mixed), 20.0);
+    }
+
+    #[test]
+    fn evaluator_prefers_threats_over_position() {
+        // X threatens the top row; O holds the centre. Threat scoring applies,
+        // positional scoring does not: 50, not 50 - 20.
+        let b = board_from("XX. .O. ...", Mark::O);
+        assert_eq!(b.threats(Mark::X), 1);
+        assert_eq!(Evaluator.evaluate(&b), 50.0);
+    }
+
+    #[test]
+    fn evaluator_combines_opposing_threats_by_subtraction() {
+        // X threatens the top row, O threatens the middle row: 50 - 50 = 0.
+        let both = board_from("XX. OO. .X.", Mark::X);
+        assert_eq!(both.threats(Mark::X), 1);
+        assert_eq!(both.threats(Mark::O), 1);
+        assert_eq!(Evaluator.evaluate(&both), 0.0);
+    }
+
+    #[test]
+    fn evaluator_scores_nonterminal_and_draw_as_zero() {
+        assert_eq!(Evaluator.evaluate(&Board::new(Mark::X)), 0.0);
+        assert_eq!(Evaluator.evaluate(&board_from("XOX OXO OXO", Mark::X)), 0.0);
+    }
+
+    #[test]
+    fn game_new_always_opens_with_x() {
+        // X always moves first; the human's mark follows from who starts.
+        let g = Game::new(true);
+        assert_eq!(g.board.turn_mark(), Mark::X);
+        assert_eq!(g.human, Mark::X);
+        assert!(g.is_human_turn());
+
+        let g = Game::new(false);
+        assert_eq!(g.board.turn_mark(), Mark::X);
+        assert_eq!(g.human, Mark::O);
+        assert!(!g.is_human_turn());
+    }
+
+    #[test]
+    fn game_play_rejects_out_of_bounds() {
+        let mut g = Game::new(true);
+        assert_eq!(g.play(9), Err(MoveError::OutOfBounds));
+        assert_eq!(g.play(usize::MAX), Err(MoveError::OutOfBounds));
+    }
+
+    #[test]
+    fn game_play_rejects_occupied_cells() {
+        let mut g = Game::new(true);
+        g.play(4).unwrap();
+        assert_eq!(g.play(4), Err(MoveError::Occupied));
+    }
+
+    #[test]
+    fn game_play_rejects_moves_after_the_game_ends() {
+        let mut g = Game::new(true);
+        // X: 0, O: 3, X: 1, O: 4, X: 2 => X wins the top row.
+        for cell in [0, 3, 1, 4, 2] {
+            g.play(cell).unwrap();
+        }
+        assert_eq!(g.status(), Status::Win(Mark::X));
+        assert_eq!(g.play(8), Err(MoveError::GameOver));
+    }
+
+    #[test]
+    fn game_play_alternates_turns() {
+        let mut g = Game::new(true);
+        g.play(0).unwrap();
+        assert_eq!(g.board.cells()[0], Some(Mark::X));
+        assert!(!g.is_human_turn());
+        g.play(1).unwrap();
+        assert_eq!(g.board.cells()[1], Some(Mark::O));
+        assert!(g.is_human_turn());
+    }
+
+    #[test]
+    fn game_ai_best_matches_best_move() {
+        let g = Game::new(true);
+        assert_eq!(g.ai_best(), best_move(&g.board));
+    }
+
+    #[test]
+    fn move_error_messages_are_stable() {
+        assert_eq!(MoveError::GameOver.to_string(), "the game is already over");
+        assert_eq!(MoveError::OutOfBounds.to_string(), "cell index out of bounds");
+        assert_eq!(MoveError::Occupied.to_string(), "that cell is already taken");
     }
 }

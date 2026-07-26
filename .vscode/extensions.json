@@ -1,0 +1,11 @@
+{
+  // See DEVELOPMENT.md for what each of these is used for.
+  "recommendations": [
+    "rust-lang.rust-analyzer",
+    "vadimcn.vscode-lldb",
+    "tauri-apps.tauri-vscode",
+    "vitest.explorer",
+    "esbenp.prettier-vscode",
+    "dbaeumer.vscode-eslint"
+  ]
+}

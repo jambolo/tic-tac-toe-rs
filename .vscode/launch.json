@@ -1,0 +1,58 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      // Debugs the ttt-core unit tests directly — no Tauri window involved.
+      // rust-analyzer also generates an equivalent config on the fly via the
+      // "Debug" codelens above any #[test] fn; this entry is the explicit,
+      // repeatable version of the same thing. Cross-platform (CodeLLDB).
+      "type": "lldb",
+      "request": "launch",
+      "name": "Rust: Debug ttt-core tests",
+      "cargo": {
+        "args": ["test", "--no-run", "--lib", "-p", "ttt-core"],
+        "filter": { "name": "ttt-core", "kind": "lib" }
+      },
+      "args": [],
+      "cwd": "${workspaceFolder}",
+      "sourceLanguages": ["rust"]
+    },
+    {
+      // Attaches to the Rust backend of an already-running `tauri dev`
+      // session (start it first, e.g. via the "tauri: dev" task). This is
+      // the standard way to hit breakpoints in src-tauri/src/main.rs commands
+      // without fighting over how the binary discovers the Vite dev server.
+      "type": "lldb",
+      "request": "attach",
+      "name": "Rust: Attach to running Tauri app",
+      "pid": "${command:pickProcess}",
+      "sourceLanguages": ["rust"]
+    },
+    {
+      // Debugs pure frontend/UI logic against the Vite dev server in a real
+      // Chrome/Edge tab, with full VS Code breakpoints and source maps.
+      // Cross-platform (Linux + Windows). Caveat: invoke() calls will reject
+      // since no Tauri backend is listening on this path — good for
+      // rendering/layout/pure-logic work, not full start-to-finish flows.
+      "type": "chrome",
+      "request": "launch",
+      "name": "TS: Debug frontend in Chrome (Vite only, no backend)",
+      "url": "http://localhost:5173",
+      "webRoot": "${workspaceFolder}/src",
+      "preLaunchTask": "vite: dev (frontend only)"
+    },
+    {
+      // Windows-only: attaches VS Code's JS debugger to the actual embedded
+      // WebView2 webview via its Chrome DevTools Protocol port. Full
+      // integration debugging (invoke() included) with real breakpoints.
+      // Requires launching the app with
+      //   WEBVIEW2_ADDITIONAL_BROWSER_ARGUMENTS=--remote-debugging-port=9222
+      // set first — see DEVELOPMENT.md's frontend debugging section.
+      "type": "chrome",
+      "request": "attach",
+      "name": "TS: Attach to Tauri WebView2 (Windows)",
+      "port": 9222,
+      "webRoot": "${workspaceFolder}/src"
+    }
+  ]
+}

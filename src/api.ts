@@ -25,9 +25,9 @@ export interface GameView {
 }
 
 export const api = {
-  /** Start a new game; the human plays `mark` and `humanStarts` decides who opens. */
-  newGame(mark: Mark, humanStarts: boolean): Promise<GameView> {
-    return invoke<GameView>("new_game", { mark, humanStarts });
+  /** Start a new game. X always opens; `humanStarts` decides whether the human plays X (first) or O (second). */
+  newGame(humanStarts: boolean): Promise<GameView> {
+    return invoke<GameView>("new_game", { humanStarts });
   },
 
   /** Apply the human's move at `cell` (0..8). */

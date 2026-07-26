@@ -9,6 +9,12 @@
 /node_modules
 /dist
 
+# VS Code
+.vscode
+
+# Claude AI
+.claude
+
 # Misc
 *.log
 .DS_Store
