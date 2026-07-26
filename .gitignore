@@ -1,0 +1,14 @@
+# Rust
+/target
+/src-tauri/target
+
+# Tauri generated
+/src-tauri/gen
+
+# Node / frontend
+/node_modules
+/dist
+
+# Misc
+*.log
+.DS_Store

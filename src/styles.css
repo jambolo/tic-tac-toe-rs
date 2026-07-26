@@ -1,0 +1,153 @@
+:root {
+  --bg: #0f172a;
+  --panel: #1e293b;
+  --line: #334155;
+  --text: #e2e8f0;
+  --muted: #94a3b8;
+  --accent: #2563eb;
+  --x: #38bdf8;
+  --o: #facc15;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  background: var(--bg);
+  color: var(--text);
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+#app {
+  width: 100%;
+  max-width: 420px;
+  padding: 28px 20px 40px;
+  text-align: center;
+}
+
+h1 {
+  margin: 0 0 20px;
+  font-size: 1.6rem;
+  letter-spacing: 0.02em;
+}
+
+.setup {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: center;
+  justify-content: center;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px;
+}
+
+fieldset {
+  border: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+legend {
+  float: left;
+  margin-right: 8px;
+  color: var(--muted);
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.setup label {
+  font-size: 0.95rem;
+  cursor: pointer;
+}
+
+button#new-game {
+  flex: 1 1 100%;
+  margin-top: 4px;
+  padding: 10px 16px;
+  font-size: 1rem;
+  font-weight: 600;
+  color: white;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: filter 0.15s ease;
+}
+
+button#new-game:hover {
+  filter: brightness(1.1);
+}
+
+.status {
+  min-height: 1.4em;
+  margin: 20px 0;
+  font-size: 1.1rem;
+  color: var(--text);
+}
+
+.board {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  aspect-ratio: 1 / 1;
+  margin: 0 auto;
+  max-width: 360px;
+}
+
+.board.thinking {
+  opacity: 0.85;
+}
+
+.cell {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: clamp(2.4rem, 16vw, 4rem);
+  font-weight: 700;
+  line-height: 1;
+  color: var(--text);
+  background: var(--panel);
+  border: 2px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: background 0.12s ease, border-color 0.12s ease, transform 0.05s ease;
+}
+
+.cell:not(:disabled):hover {
+  background: #24324a;
+  border-color: var(--accent);
+}
+
+.cell:not(:disabled):active {
+  transform: scale(0.97);
+}
+
+.cell:disabled {
+  cursor: default;
+}
+
+.cell.filled {
+  cursor: default;
+}
+
+.cell.x {
+  color: var(--x);
+}
+
+.cell.o {
+  color: var(--o);
+}

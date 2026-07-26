@@ -1,0 +1,6 @@
+[workspace]
+resolver = "2"
+members = ["src-core", "src-tauri"]
+# The vendored game-player crate is consumed as a path dependency, not a
+# workspace member. Excluding it keeps `cargo` from trying to manage it here.
+exclude = ["vendor"]

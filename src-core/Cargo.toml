@@ -1,0 +1,9 @@
+[package]
+name = "ttt-core"
+version = "0.1.0"
+edition = "2024"
+description = "UI-agnostic Tic-Tac-Toe engine built on the game-player minimax search."
+
+[dependencies]
+# The AI search lives in the game-player crate, pulled in as a git submodule.
+game-player = { path = "../vendor/game-player" }

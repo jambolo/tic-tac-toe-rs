@@ -1,0 +1,36 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Tic-Tac-Toe</title>
+    <link rel="stylesheet" href="/src/styles.css" />
+  </head>
+  <body>
+    <main id="app">
+      <h1>Tic-Tac-Toe</h1>
+
+      <section class="setup" aria-label="New game options">
+        <fieldset>
+          <legend>You play</legend>
+          <label><input type="radio" name="mark" value="X" checked /> X</label>
+          <label><input type="radio" name="mark" value="O" /> O</label>
+        </fieldset>
+        <fieldset>
+          <legend>Who goes first</legend>
+          <label><input type="radio" name="first" value="human" checked /> You</label>
+          <label><input type="radio" name="first" value="computer" /> Computer</label>
+        </fieldset>
+        <button id="new-game" type="button">New game</button>
+      </section>
+
+      <p id="status" class="status" role="status" aria-live="polite">
+        Choose your options and press <strong>New game</strong>.
+      </p>
+
+      <div id="board" class="board" role="grid" aria-label="Tic-Tac-Toe board"></div>
+    </main>
+
+    <script type="module" src="/src/main.ts"></script>
+  </body>
+</html>
