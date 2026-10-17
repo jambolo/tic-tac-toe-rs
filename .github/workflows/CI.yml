@@ -11,8 +11,6 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v7
-        with:
-          submodules: recursive
 
       - uses: dtolnay/rust-toolchain@stable
         with:
@@ -39,7 +37,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: 22
+          node-version: 24
           cache: pnpm
 
       - name: Install dependencies

@@ -1,18 +1,14 @@
 //! # Tauri shell — the thin adapter layer
 //!
-//! This binary is the *shell* of the template: it owns the window, holds the
-//! authoritative game state, and exposes the compute core ([`ttt_core`]) to the
-//! web UI as a small set of commands. It contains no game rules and no AI — those
-//! live in `ttt-core`. Its only jobs are:
+//! This binary is the *shell* of the template: it owns the window, holds the authoritative game state, and exposes the compute core
+//! ([`ttt_core`]) to the web UI as a small set of commands. It contains no game rules and no AI — those live in `ttt-core`. Its
+//! only jobs are:
 //!
-//! * keep the authoritative [`Game`] in Tauri-managed state (so rules are
-//!   enforced in Rust, not trusted from the UI),
-//! * translate between the engine's types and a small JSON **protocol**
-//!   ([`GameView`]) the front end renders,
-//! * run the AI search off the UI thread and emit a "thinking" event around it —
-//!   the template's start/compute/finish contract. Tic-Tac-Toe search is
-//!   effectively instant, but doing it on a worker thread keeps the pattern
-//!   correct for heavier games built from this same skeleton.
+//! * keep the authoritative [`Game`] in Tauri-managed state (so rules are enforced in Rust, not trusted from the UI),
+//! * translate between the engine's types and a small JSON **protocol** ([`GameView`]) the front end renders,
+//! * run the AI search off the UI thread and emit a "thinking" event around it — the template's start/compute/finish contract.
+//!   Tic-Tac-Toe search is effectively instant, but doing it on a worker thread keeps the pattern correct for heavier games built
+//!   from this same skeleton.
 
 // Hide the console window on Windows in release builds.
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")]
@@ -86,8 +82,7 @@ fn view(game: &Game) -> GameView {
 // Commands
 // ---------------------------------------------------------------------------
 
-/// Start a new game. X always opens; `human_starts` decides whether the human
-/// plays X (first) or O (second).
+/// Start a new game. X always opens; `human_starts` decides whether the human plays X (first) or O (second).
 #[tauri::command]
 fn new_game(human_starts: bool, state: State<'_, AppState>) -> Result<GameView, String> {
     let game = Game::new(human_starts);
@@ -96,8 +91,7 @@ fn new_game(human_starts: bool, state: State<'_, AppState>) -> Result<GameView, 
     Ok(v)
 }
 
-/// Apply the human's move at `cell`. Rejected if it is not the human's turn or
-/// the move is illegal.
+/// Apply the human's move at `cell`. Rejected if it is not the human's turn or the move is illegal.
 #[tauri::command]
 fn play(cell: usize, state: State<'_, AppState>) -> Result<GameView, String> {
     let mut guard = state.game.lock().unwrap();
@@ -109,8 +103,8 @@ fn play(cell: usize, state: State<'_, AppState>) -> Result<GameView, String> {
     Ok(view(game))
 }
 
-/// Compute and apply the computer's move. The search runs on a blocking worker
-/// thread so the UI never freezes; a `thinking` event brackets the work.
+/// Compute and apply the computer's move. The search runs on a blocking worker thread so the UI never freezes; a `thinking` event
+/// brackets the work.
 #[tauri::command]
 async fn ai_move(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<GameView, String> {
     // Snapshot the board without holding the lock across the await.
@@ -132,8 +126,7 @@ async fn ai_move(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<Ga
         .map_err(|e| format!("search task failed: {e}"))?;
     let _ = app.emit(THINKING_EVENT, false);
 
-    // Re-acquire the lock and apply, re-validating in case the game was reset
-    // while the search ran.
+    // Re-acquire the lock and apply, re-validating in case the game was reset while the search ran.
     let mut guard = state.game.lock().unwrap();
     let game = guard.as_mut().ok_or("no game in progress")?;
     if game.is_human_turn() || game.status() != Status::InProgress {
@@ -147,17 +140,14 @@ async fn ai_move(app: tauri::AppHandle, state: State<'_, AppState>) -> Result<Ga
 
 fn main() {
     tauri::Builder::default()
-        .manage(AppState {
-            game: Mutex::new(None),
-        })
+        .manage(AppState { game: Mutex::new(None) })
         .invoke_handler(tauri::generate_handler![new_game, play, ai_move])
         .run(tauri::generate_context!())
         .expect("error while running the Tic-Tac-Toe application");
 }
 
-// The command handlers themselves are thin wrappers over `ttt-core` (where the
-// logic and its tests live); what *is* worth pinning down here is the protocol —
-// the exact JSON shapes the front end deserializes (`src/api.ts` mirrors them).
+// The command handlers themselves are thin wrappers over `ttt-core` (where the logic and its tests live); what *is* worth pinning
+// down here is the protocol — the exact JSON shapes the front end deserializes (`src/api.ts` mirrors them).
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -212,9 +202,6 @@ mod tests {
             serde_json::to_value(StatusView::Win { winner: 'O' }).unwrap(),
             json!({ "kind": "win", "winner": "O" })
         );
-        assert_eq!(
-            serde_json::to_value(StatusView::Draw).unwrap(),
-            json!({ "kind": "draw" })
-        );
+        assert_eq!(serde_json::to_value(StatusView::Draw).unwrap(), json!({ "kind": "draw" }));
     }
 }

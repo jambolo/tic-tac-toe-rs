@@ -4,13 +4,12 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## What this is
 
-Player-vs-computer Tic-Tac-Toe desktop app: Tauri 2 shell + Rust engine + vanilla-TypeScript frontend. The AI plays perfectly via alpha-beta minimax from the vendored `game-player` crate (git submodule at `vendor/game-player`).
+Player-vs-computer Tic-Tac-Toe desktop app: Tauri 2 shell + Rust engine + vanilla-TypeScript frontend. The AI plays perfectly via alpha-beta minimax from the `game-player` crate (git dependency on `github.com/jambolo/game-player`, pinned by `rev` in `src-core/Cargo.toml`).
 
 ## Commands
 
 ```bash
 # One-time setup
-git submodule update --init --recursive   # fetches vendor/game-player
 pnpm install
 
 # Develop (Vite dev server + native window, HMR)
@@ -44,10 +43,10 @@ Three strictly separated layers; keep them that way:
 
 * **`src/` (frontend)** — `api.ts` is the **only** module allowed to import `@tauri-apps/api`; everything else goes through it. `main.ts` is DOM glue. Pure logic is factored into small modules (e.g. `status.ts`) with a sibling `*.test.ts` — prefer extending that pattern over testing through the DOM.
 
-Rust workspace (`Cargo.toml`) has members `src-core` + `src-tauri`; `vendor/` is excluded and consumed as a path dependency.
+Rust workspace (`Cargo.toml`) has members `src-core` + `src-tauri`.
 
 ## Notes
 
 * Versioning: bump `package.json` and `src-tauri/tauri.conf.json` `version` fields together.
 * `DEVELOPMENT.md` has the full VS Code debugging setup (CodeLLDB attach for Rust, WebView2 attach for TS on Windows).
-* `vendor/game-player` has its own CLAUDE.md; treat the submodule as read-only from this repo.
+* To update `game-player`, change the `rev` in `src-core/Cargo.toml`, then `cargo update -p game-player`.

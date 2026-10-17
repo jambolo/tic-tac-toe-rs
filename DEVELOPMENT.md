@@ -87,7 +87,6 @@ tauri`), so a global install isn't required — just:
 ```bash
 git clone <this-repo-url> tic-tac-toe
 cd tic-tac-toe
-git submodule update --init --recursive   # fetches vendor/game-player
 pnpm install
 ```
 
@@ -118,10 +117,8 @@ listed in `.vscode/extensions.json`):
 The checked-in `.vscode/settings.json` already:
 
 - points rust-analyzer at the workspace `Cargo.toml` (so it resolves both
-  `src-core` and `src-tauri`, plus the `vendor/game-player` path dependency),
+  `src-core` and `src-tauri`, plus the `game-player` git dependency),
 - runs `cargo clippy` (not just `cargo check`) for inline diagnostics,
-- pins the TypeScript version to the one in `node_modules` rather than VS
-  Code's bundled copy,
 - sets Git Bash as the default integrated terminal **on Windows only** (no
   effect on Linux),
 - format-on-save for `.rs` (via rust-analyzer) and `.ts` (via Prettier).
@@ -375,7 +372,6 @@ app version, though keeping them aligned avoids confusion.
 
 ```bash
 # Setup
-git submodule update --init --recursive
 pnpm install
 
 # Develop

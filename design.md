@@ -70,8 +70,7 @@ my-app/
 │   ├── main.ts           #   UI controller
 │   └── styles.css
 ├── index.html
-├── package.json          # Vite + @tauri-apps/api + @tauri-apps/cli
-└── vendor/…              # git submodule(s) for shared library crates
+└── package.json          # Vite + @tauri-apps/api + @tauri-apps/cli
 ```
 
 ### Layer 1 — Compute core (`src-core`)
@@ -154,14 +153,13 @@ Player-vs-computer Tic-Tac-Toe. Before each game the player chooses their mark
 alpha-beta minimax — it is unbeatable; the best achievable result against it is
 a draw.
 
-### 4.2 The AI: the `game-player` crate (git submodule)
+### 4.2 The AI: the `game-player` crate (git dependency)
 
 The search comes from the external crate
-[`game-player`](https://github.com/jambolo/game-player) (v0.3.1, edition 2024),
-vendored at `vendor/game-player` as a **git submodule** recorded in
-`.gitmodules` with URL `git@github.com:jambolo/game-player.git`, pinned at
-commit `42a9aa5`. `src-core` consumes it as a path dependency; `Cargo.toml`'s
-workspace excludes `vendor` so cargo does not try to manage it as a member.
+[`game-player`](https://github.com/jambolo/game-player) (v0.4.0, edition 2024),
+consumed by `src-core` as a **Cargo git dependency** on
+`https://github.com/jambolo/game-player.git`, pinned with `rev` at commit
+`0b8ce6f`.
 
 Integration points implemented (all in `src-core`):
 
@@ -260,20 +258,18 @@ Engine tests (`cargo test -p ttt-core`, 9 tests, all passing):
 
 Additional verification performed in this session: `cargo check` of the full
 Tauri shell compiles cleanly; `cargo clippy` clean; `tsc --noEmit` clean; the
-delivered archive was re-extracted fresh and the engine tests re-run offline to
-confirm the vendored submodule builds without network access.
+delivered archive was re-extracted fresh and the engine tests re-run.
 
 ### 4.7 Build and run
 
 ```bash
-git submodule update --init --recursive   # if cloned fresh
 pnpm install
 pnpm tauri dev      # development: Vite + hot reload + native window
 pnpm tauri build    # production: platform installer
 cargo test -p ttt-core # engine tests, no UI needed
 ```
 
-Prerequisites: Rust stable (edition 2024; developed on rustc 1.95), Node ≥ 18,
+Prerequisites: Rust stable (edition 2024; developed on rustc 1.99), Node ≥ 22.12,
 and Tauri's per-OS system deps (on Windows just the WebView2 runtime; on Linux
 the GTK/WebKitGTK dev packages).
 
@@ -287,7 +283,7 @@ macOS `.icns` with `pnpm tauri icon src-tauri/icons/icon.png`.
 | UI/compute framework | Tauri v2 | HTML/CSS over Rust; small binaries; native compute; 3 OSes from one codebase |
 | Per-app structure | Independent repo per app, common template | Apps are independent by requirement; the template, not a workspace, is what's shared |
 | Core/UI separation | `src-core` has zero UI deps | Testable, benchmarkable, headless-capable, portable |
-| AI library | `game-player` via git submodule | Existing minimax + transposition table; submodule pins an exact commit while tracking the upstream repo |
+| AI library | `game-player` via Cargo git dependency | Existing minimax + transposition table; `rev` pins an exact upstream commit |
 | Alice/Bob mapping | Alice → X, Bob → O | Fixes maximizer/minimizer to marks once; evaluator stays Alice-perspective |
 | Search depth | 9 (full tree) | Perfect play; trivial cost for this game |
 | Eval tie-break | ±(WIN − filled) | Prefer faster wins, slower losses |

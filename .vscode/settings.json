@@ -1,13 +1,9 @@
 {
   // Point rust-analyzer at the workspace root so it picks up both crates
-  // (src-core, src-tauri) plus the vendored game-player path dependency.
+  // (src-core, src-tauri) plus the game-player git dependency.
   "rust-analyzer.linkedProjects": ["./Cargo.toml"],
   "rust-analyzer.cargo.features": "all",
   "rust-analyzer.check.command": "clippy",
-
-  // Use the TypeScript version installed in node_modules (matches what the
-  // build actually uses) instead of VS Code's bundled version.
-  "typescript.tsdk": "node_modules/typescript/lib",
 
   // Keep line endings consistent regardless of platform; see DEVELOPMENT.md's
   // Windows/Git Bash notes on autocrlf.

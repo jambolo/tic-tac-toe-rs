@@ -2,8 +2,8 @@
 
 A small desktop app built on the **Tauri + Rust core + HTML/CSS front end**
 template. The computer plays perfectly using the alpha-beta minimax search from
-the [`game-player`](https://github.com/jambolo/game-player) crate, which is
-included here as a git submodule.
+the [`game-player`](https://github.com/jambolo/game-player) crate, pulled in as
+a Cargo git dependency.
 
 You choose your mark (X or O) and who moves first before each game. The computer
 is unbeatable — the best you can do is force a draw.
@@ -25,8 +25,7 @@ tic-tac-toe/
 │   ├── main.ts           #   UI controller
 │   └── styles.css
 ├── index.html
-├── package.json
-└── vendor/game-player/   # git submodule → git@github.com:jambolo/game-player.git
+└── package.json
 ```
 
 The design keeps the computation (`src-core`) completely separate from the UI
@@ -35,21 +34,11 @@ skeleton can be reused for other apps.
 
 ## Prerequisites
 
-* **Rust** (stable, edition 2024 — rustc ≥ 1.85; developed against 1.95).
-* **Node.js** (≥ 18) and **pnpm** (`npm install -g pnpm`).
+* **Rust** (stable, edition 2024 — rustc ≥ 1.85; developed against 1.99).
+* **Node.js** (≥ 22.12) and **pnpm** (`npm install -g pnpm`).
 * **Tauri system dependencies** for your OS — see
   <https://tauri.app/start/prerequisites/>. On Windows this is just the WebView2
   runtime (already present on Windows 10/11).
-
-## Getting the submodule
-
-If you cloned this repo fresh, pull the `game-player` source:
-
-```bash
-git submodule update --init --recursive
-```
-
-(If you received this as an archive, the submodule may already be populated.)
 
 ## Run in development
 

@@ -1,3 +1,0 @@
-[submodule "vendor/game-player"]
-	path = vendor/game-player
-	url = git@github.com:jambolo/game-player.git

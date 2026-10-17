@@ -1,22 +1,18 @@
 //! # ttt-core — a UI-agnostic Tic-Tac-Toe engine
 //!
-//! This crate is the **compute core** of the application template: it knows the
-//! rules of Tic-Tac-Toe and how to pick an optimal move, and it knows *nothing*
-//! about Tauri, the webview, or any UI. That separation is deliberate — it lets
-//! the engine be unit-tested, benchmarked, or reused headless without a GUI.
+//! This crate is the **compute core** of the application template: it knows the rules of Tic-Tac-Toe and how to pick an optimal
+//! move, and it knows *nothing* about Tauri, the webview, or any UI. That separation is deliberate — it lets the engine be
+//! unit-tested, benchmarked, or reused headless without a GUI.
 //!
-//! The artificial intelligence is provided entirely by the [`game_player`] crate
-//! (a git submodule): we implement its [`State`], [`StaticEvaluator`], and
-//! [`minimax::ResponseGenerator`] traits for Tic-Tac-Toe, then call
-//! [`minimax::search`] to obtain the best move.
+//! The artificial intelligence is provided entirely by the [`game_player`] crate (a git dependency): we implement its [`State`],
+//! [`StaticEvaluator`], and [`minimax::ResponseGenerator`] traits for Tic-Tac-Toe, then call [`minimax::search`] to obtain the best
+//! move.
 //!
 //! ## Player convention
 //!
-//! `game-player` fixes Alice as the maximizing player and Bob as the minimizing
-//! player, and its evaluator is *always* scored from Alice's perspective. We map
-//! **Alice → X** and **Bob → O**. The human may play either mark; the computer
-//! simply calls [`best_move`] whenever it is its turn, and the search's internal
-//! max/min logic handles whichever side is to move.
+//! `game-player` fixes Alice as the maximizing player and Bob as the minimizing player, and its evaluator is *always* scored from
+//! Alice's perspective. We map **Alice → X** and **Bob → O**. The human may play either mark; the computer simply calls
+//! [`best_move`] whenever it is its turn, and the search's internal max/min logic handles whichever side is to move.
 
 use game_player::minimax::{self, ResponseGenerator};
 use game_player::{PlayerId, State, StaticEvaluator};
@@ -24,8 +20,8 @@ use game_player::{PlayerId, State, StaticEvaluator};
 /// Number of cells on the board.
 pub const BOARD_SIZE: usize = 9;
 
-/// Full-game search depth. A Tic-Tac-Toe game is at most 9 plies, so searching
-/// to depth 9 explores the whole tree and yields perfect play.
+/// Full-game search depth. A Tic-Tac-Toe game is at most 9 plies, so searching to depth 9 explores the whole tree and yields
+/// perfect play.
 pub const MAX_DEPTH: u32 = 9;
 
 /// A player's mark. Alice (the maximizer) plays `X`; Bob (the minimizer) plays `O`.
@@ -141,9 +137,11 @@ impl Board {
     pub fn winner(&self) -> Option<Mark> {
         for line in LINES {
             if let Some(m) = self.cells[line[0]]
-                && self.cells[line[1]] == Some(m) && self.cells[line[2]] == Some(m) {
-                    return Some(m);
-                }
+                && self.cells[line[1]] == Some(m)
+                && self.cells[line[2]] == Some(m)
+            {
+                return Some(m);
+            }
         }
         None
     }
@@ -164,8 +162,8 @@ impl Board {
         }
     }
 
-    /// All legal moves. Returns an empty vector exactly when the position is
-    /// terminal — the contract `game-player`'s search relies on.
+    /// All legal moves. Returns an empty vector exactly when the position is terminal — the contract `game-player`'s search
+    /// relies on.
     pub fn legal_moves(&self) -> Vec<Move> {
         if self.status() != Status::InProgress {
             return Vec::new();
@@ -229,18 +227,14 @@ impl State for Board {
 
 /// Static evaluator, scored from Alice's (X's) perspective.
 ///
-/// A completed win is worth exactly ±`WIN` — matching `alice_wins_value` /
-/// `bob_wins_value` so the search's win-recognition cutoffs fire. Non-terminal
-/// positions are scored by immediate threats per side (a threat is a line with
-/// two own marks and an empty cell): one threat is worth `WIN / 2`, two or more
-/// (a fork) `WIN - 1` — strictly below `WIN`, so only a real terminal reads as
-/// a win. X's and O's threat scores are combined by subtraction.
+/// A completed win is worth exactly ±`WIN` — matching `alice_wins_value` / `bob_wins_value` so the search's win-recognition
+/// cutoffs fire. Non-terminal positions are scored by immediate threats per side (a threat is a line with two own marks and an
+/// empty cell): one threat is worth `WIN / 2`, two or more (a fork) `WIN - 1` — strictly below `WIN`, so only a real terminal
+/// reads as a win. X's and O's threat scores are combined by subtraction.
 ///
-/// When neither side has a threat, the position is scored on square occupancy
-/// instead: the centre is worth `WIN / 5` and each corner `WIN / 10`, again
-/// combined by subtraction. The maximum positional score (centre plus all four
-/// corners, `3 * WIN / 5`) stays below a single threat's `WIN / 2` differential
-/// only in mixed positions; more importantly it stays below `WIN`, so it can
+/// When neither side has a threat, the position is scored on square occupancy instead: the centre is worth `WIN / 5` and each
+/// corner `WIN / 10`, again combined by subtraction. The maximum positional score (centre plus all four corners, `3 * WIN / 5`)
+/// stays below a single threat's `WIN / 2` differential only in mixed positions; more importantly it stays below `WIN`, so it can
 /// never read as a win.
 pub struct Evaluator;
 
@@ -261,8 +255,8 @@ const CORNERS: [usize; 4] = [0, 2, 6, 8];
 /// The centre cell.
 const CENTER: usize = 4;
 
-/// Positional score for one side: `WIN / 5` for holding the centre plus
-/// `WIN / 10` per corner held. Used only when neither side has a threat.
+/// Positional score for one side: `WIN / 5` for holding the centre plus `WIN / 10` per corner held. Used only when neither side has
+/// a threat.
 fn position_value(board: &Board, mark: Mark) -> f32 {
     let cells = board.cells();
     let mut value = 0.0;
@@ -306,8 +300,8 @@ impl StaticEvaluator for Evaluator {
     }
 }
 
-/// Move generator. Delegates to [`Board::legal_moves`], which already honours the
-/// "empty result iff terminal" policy the search requires.
+/// Move generator. Delegates to [`Board::legal_moves`], which already honours the "empty result iff terminal" policy the search
+/// requires.
 pub struct Generator;
 
 impl ResponseGenerator for Generator {
@@ -318,14 +312,14 @@ impl ResponseGenerator for Generator {
     }
 }
 
-/// Compute the optimal move for the player to move, via `game-player`'s
-/// alpha-beta minimax search. Returns `None` only if the position is terminal.
+/// Compute the optimal move for the player to move, via `game-player`'s alpha-beta minimax search. Returns `None` only if the
+/// position is terminal.
 pub fn best_move(board: &Board) -> Option<Move> {
     minimax::search(&Evaluator, &Generator, board, MAX_DEPTH)
 }
 
-/// A convenience facade tying a board to the human's chosen mark. The Tauri shell
-/// uses this as the authoritative game object; the rules live here, not in the UI.
+/// A convenience facade tying a board to the human's chosen mark. The Tauri shell uses this as the authoritative game object; the
+/// rules live here, not in the UI.
 #[derive(Debug, Clone)]
 pub struct Game {
     pub board: Board,
@@ -333,8 +327,7 @@ pub struct Game {
 }
 
 impl Game {
-    /// Start a game. X always moves first; `human_starts` decides whether the
-    /// human plays X (moving first) or O (moving second).
+    /// Start a game. X always moves first; `human_starts` decides whether the human plays X (moving first) or O (moving second).
     pub fn new(human_starts: bool) -> Self {
         Game {
             board: Board::new(Mark::X),
@@ -450,8 +443,8 @@ mod tests {
         assert_eq!(optimal_selfplay(Mark::O), Status::Draw);
     }
 
-    /// Exhaustively explore *every* line of play the human could choose while the
-    /// computer always replies with `best_move`, asserting the human never wins.
+    /// Exhaustively explore *every* line of play the human could choose while the computer always replies with `best_move`,
+    /// asserting the human never wins.
     fn ai_never_loses(board: Board, human: Mark) {
         match board.status() {
             Status::Win(w) => {
@@ -487,9 +480,8 @@ mod tests {
 
     #[test]
     fn computer_going_first_beats_a_side_square_reply() {
-        // The computer (X) opens optimally. O answers with a side square — a
-        // theoretically losing reply to a perfect opening — then plays
-        // optimally for the rest of the game. X must still convert the win.
+        // The computer (X) opens optimally. O answers with a side square — a theoretically losing reply to a perfect opening —
+        // then plays optimally for the rest of the game. X must still convert the win.
         const SIDES: [usize; 4] = [1, 3, 5, 7];
         let start = Board::new(Mark::X);
         let opening = best_move(&start).expect("empty board must have a move");
@@ -566,8 +558,8 @@ mod tests {
 
     #[test]
     fn evaluator_scores_terminal_wins_at_exactly_win_value() {
-        // A completed win must equal alice_wins_value/bob_wins_value so the
-        // search's win-recognition cutoff (`is_winning_value`) fires.
+        // A completed win must equal alice_wins_value/bob_wins_value so the search's win-recognition cutoff (`is_winning_value`)
+        // fires.
         let x_won = board_from("XXX OO. ...", Mark::O);
         assert_eq!(Evaluator.evaluate(&x_won), Evaluator.alice_wins_value());
 
@@ -588,8 +580,8 @@ mod tests {
 
     #[test]
     fn evaluator_scores_fork_as_win_minus_one() {
-        // X threatens the top row (cell 2) and the left column (cell 6): a fork.
-        // O's marks (cells 5 and 7) share no line, so O has no threat.
+        // X threatens the top row (cell 2) and the left column (cell 6): a fork. O's marks (cells 5 and 7) share no line, so O has
+        // no threat.
         let x_fork = board_from("XX. X.O .O.", Mark::O);
         assert_eq!(x_fork.threats(Mark::X), 2);
         assert_eq!(Evaluator.evaluate(&x_fork), 99.0);
@@ -607,8 +599,7 @@ mod tests {
         assert_eq!(Evaluator.evaluate(&board_from("... .O. ...", Mark::X)), -20.0);
         assert_eq!(Evaluator.evaluate(&board_from("X.. ... ...", Mark::O)), 10.0);
 
-        // X holds centre + a corner (30), O holds a corner (10); the shared
-        // diagonal is blocked, so no threats: 30 - 10 = 20.
+        // X holds centre + a corner (30), O holds a corner (10); the shared diagonal is blocked, so no threats: 30 - 10 = 20.
         let mixed = board_from("X.. .X. ..O", Mark::O);
         assert_eq!(mixed.threats(Mark::X), 0);
         assert_eq!(Evaluator.evaluate(&mixed), 20.0);
@@ -616,8 +607,7 @@ mod tests {
 
     #[test]
     fn evaluator_prefers_threats_over_position() {
-        // X threatens the top row; O holds the centre. Threat scoring applies,
-        // positional scoring does not: 50, not 50 - 20.
+        // X threatens the top row; O holds the centre. Threat scoring applies, positional scoring does not: 50, not 50 - 20.
         let b = board_from("XX. .O. ...", Mark::O);
         assert_eq!(b.threats(Mark::X), 1);
         assert_eq!(Evaluator.evaluate(&b), 50.0);
